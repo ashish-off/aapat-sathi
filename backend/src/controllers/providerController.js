@@ -75,3 +75,23 @@ export async function updateAvailability(req, res, next) {
     next(err);
   }
 }
+
+export async function getProviderDashboard(req, res, next) {
+  try {
+    const { id } = req.params;
+    
+    // Import here to avoid circular dependency or add to top
+    const { db } = await import("../db/index.js");
+    const { emergencyRequests } = await import("../db/schema/index.js");
+    const { eq } = await import("drizzle-orm");
+
+    const incomingPatients = await db
+      .select()
+      .from(emergencyRequests)
+      .where(eq(emergencyRequests.providerId, id));
+
+    res.json({ incomingPatients });
+  } catch (err) {
+    next(err);
+  }
+}
