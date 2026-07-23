@@ -18,10 +18,10 @@ This plan is optimized for hackathon speed: building the core database and servi
 - [x] Build protected endpoints for provider staff to update their status (Open/Full/Limited) and availability
 
 ## Phase 3: AI & Matching Pipeline
-- [ ] Integrate Gemini/OpenAI for triage extraction (extracting urgency, capabilities, symptoms)
+- [x] Integrate Gemini/OpenAI for triage extraction (extracting urgency, capabilities, symptoms)
 - [x] Implement matching service (Haversine distance + JSONB capability containment query)
-- [ ] Build the core orchestration service (Triage -> Match -> Save Request)
-- [ ] Create a test REST endpoint to verify the orchestrator
+- [x] Build the core orchestration service (Triage -> Match -> Save Request)
+- [x] Create a test REST endpoint to verify the orchestrator
 
 ## Phase 4: Webhooks & Integrations
 - [ ] Set up Telegram webhook (handle text, integrate Whisper for voice notes)
