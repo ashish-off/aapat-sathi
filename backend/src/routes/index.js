@@ -1,6 +1,7 @@
 import { Router } from "express";
 import authRoutes from "./authRoutes.js";
-import providerRoutes from "./providerRoutes.js"
+import providerRoutes from "./providerRoutes.js";
+import orchestrationRoutes from "./orchestrationRoutes.js";
 import { findMatchingProviders } from "../services/matchingService.js";
 
 const router = Router();
@@ -11,6 +12,7 @@ router.get("/", (req, res) => {
 
 router.use("/auth", authRoutes);
 router.use("/providers", providerRoutes);
+router.use(orchestrationRoutes); // mounts /orchestrate
 // router.use("/emergencies", emergencyRoutes);
 
 
