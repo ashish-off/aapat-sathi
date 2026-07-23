@@ -1,6 +1,8 @@
 import { Router } from "express";
 import authRoutes from "./authRoutes.js";
 import providerRoutes from "./providerRoutes.js";
+import hospitalRoute from "./hospital.route.js";
+import ambulanceRoute from "./ambulance.route.js";
 import orchestrationRoutes from "./orchestrationRoutes.js";
 import { findMatchingProviders } from "../services/matchingService.js";
 
@@ -12,19 +14,9 @@ router.get("/", (req, res) => {
 
 router.use("/auth", authRoutes);
 router.use("/providers", providerRoutes);
+router.use("/match", hospitalRoute);
+router.use("/ambulances", ambulanceRoute);
 router.use(orchestrationRoutes); // mounts /orchestrate
 // router.use("/emergencies", emergencyRoutes);
-
-
-router.get("/test-match", async (req, res, next) => {
-  try {
-    const { lat, lng, capabilities } = req.query;
-    const caps = capabilities ? capabilities.split(",") : [];
-    const results = await findMatchingProviders(parseFloat(lat), parseFloat(lng), caps);
-    res.json({ results });
-  } catch (err) {
-    next(err);
-  }
-});
 
 export default router;

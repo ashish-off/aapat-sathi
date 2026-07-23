@@ -5,3 +5,4 @@ export * from "./users.js";
 export * from "./emergencyRequests.js";
 export * from "./emergencyUpdates.js";
 export * from "./notifications.js";
+export * from "./ambulanceDispatches.js";
