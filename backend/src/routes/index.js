@@ -1,7 +1,13 @@
 import { Router } from "express";
 
-export const apiRouter = Router();
+const router = Router();
 
-apiRouter.get("/status", (req, res) => {
-    res.json({ ok: true, message: "API is ready" });
+router.get("/", (req, res) => {
+  res.json({ message: "Aapat Sathi API" });
 });
+
+// router.use("/auth", authRoutes);
+// router.use("/providers", providerRoutes);
+// router.use("/emergencies", emergencyRoutes);
+
+export default router;

@@ -1,6 +1,9 @@
-import app from "./app.js";
-import { env } from "./config/env.js";
+import dotenv from "dotenv";
 
-app.listen(env.PORT, () => {
-    console.log(`Server is running on port ${env.PORT}`);
+import app from "./app.js";
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚑 Aapat Sathi backend running on port ${PORT}`);
 });
