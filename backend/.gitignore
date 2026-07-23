@@ -12,6 +12,7 @@ yarn.lock
 # Coveralls
 .nyc_output
 coverage
+.env
 
 # Benchmarking
 benchmarks/graphs
