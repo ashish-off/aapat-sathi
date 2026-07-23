@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and, ilike, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { healthcareProviders, providerAvailability } from "../db/schema/index.js";
 
@@ -24,8 +24,34 @@ export async function createProvider(data) {
   return provider;
 }
 
-export async function getAllProviders() {
-  return db.select().from(healthcareProviders).where(eq(healthcareProviders.isActive, true));
+// export async function getAllProviders() {
+//   return db.select().from(healthcareProviders).where(eq(healthcareProviders.isActive, true));
+// }
+
+export async function searchProviders({ search, providerType, status, capability }) {
+  const conditions = [eq(healthcareProviders.isActive, true)];
+
+  if (search) {
+    conditions.push(ilike(healthcareProviders.name, `%${search}%`));
+  }
+
+  if (providerType) {
+    conditions.push(eq(healthcareProviders.providerType, providerType));
+  }
+
+  if (status) {
+    conditions.push(eq(healthcareProviders.status, status));
+  }
+
+  if (capability) {
+    // JSONB array contains check
+    conditions.push(sql`${healthcareProviders.capabilities} @> ${JSON.stringify([capability])}`);
+  }
+
+  return db
+    .select()
+    .from(healthcareProviders)
+    .where(and(...conditions));
 }
 
 export async function getProviderById(id) {

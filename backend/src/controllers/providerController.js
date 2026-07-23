@@ -1,9 +1,9 @@
 import {
   createProvider,
-  getAllProviders,
   getProviderById,
   updateProviderStatus,
   updateProviderAvailability,
+  searchProviders
 } from "../services/providerService.js";
 
 export async function register(req, res, next) {
@@ -25,7 +25,8 @@ export async function register(req, res, next) {
 
 export async function list(req, res, next) {
   try {
-    const providers = await getAllProviders();
+    const { search, providerType, status, capability } = req.query;
+    const providers = await searchProviders({ search, providerType, status, capability });
     res.json({ providers });
   } catch (err) {
     next(err);
