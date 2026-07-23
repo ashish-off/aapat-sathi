@@ -2,6 +2,8 @@ import { findBestHospital } from "../services/hospitalMatch.service.js";
 import { dispatchToNextAmbulance } from "../services/dispatch.service.js";
 import { db } from "../db/index.js";
 import { emergencyRequests } from "../db/schema/index.js";
+import { parseSms } from "../services/parseSms.js";
+import { processEmergencySms } from "../services/telerivetRest.service.js";
 
 export async function matchProvider(req, res, next) {
   try {
@@ -44,8 +46,10 @@ export async function matchProvider(req, res, next) {
 
     return res.status(200).json({
       hospital: result,
-      ambulanceDispatch: dispatchResult ? "Contacting nearest ambulance..." : "No available ambulances.",
-      emergencyRequestId: newRequest.id
+      ambulanceDispatch: dispatchResult
+        ? "Contacting nearest ambulance..."
+        : "No available ambulances.",
+      emergencyRequestId: newRequest.id,
     });
   } catch (err) {
     next(err);
@@ -53,59 +57,22 @@ export async function matchProvider(req, res, next) {
 }
 
 export async function getIncomingResponse(req, res, next) {
-  const { event, content, from_number, phone_id, secret } = req.body;
+  const { event, content, from_number, secret } = req.body;
 
   if (secret !== process.env.TELERIVET_WEBHOOK_SECRET) {
     return res.status(403).send("Invalid webhook secret");
   }
-
   if (event !== "incoming_message") {
-    return res.sendStatus(200); // ignore other event types (delivery status, etc.)
+    return res.sendStatus(200);
   }
 
-  const parsedData = await parseSms(content);
-
-  if (parsedData.error) {
-    return res.status(400).json({ error: parsedData.error });
-  }
-
-  const { disease, location } = parsedData;
-  const lat = location.lat;
-  const lon = location.lon;
-  const userLat = Number(lat);
-  const userLon = Number(lon);
-
-  if (Number.isNaN(userLat) || Number.isNaN(userLon)) {
-    return res.status(400).json({ error: "lat and lon must be valid numbers" });
-  }
-
-  const result = await findBestHospital({
-    lat: userLat,
-    lon: userLon,
-    emergencyType: disease,
+  res.status(200).json({
+    messages: [
+      { content: "Received your emergency request. Dispatching help now..." },
+    ],
   });
 
-  // Create an emergency request for SMS
-  const [newRequest] = await db
-    .insert(emergencyRequests)
-    .values({
-      channel: "sms",
-      senderContact: from_number,
-      extractedSymptom: disease,
-      urgencyLevel: "high",
-      latitude: userLat,
-      longitude: userLon,
-      providerId: result?.recommended?.hospitalId,
-      status: "triaged",
-    })
-    .returning();
-
-  // Trigger ambulance dispatch
-  const dispatchResult = await dispatchToNextAmbulance(newRequest.id);
-
-  return res.status(200).json({
-    hospital: result,
-    ambulanceDispatch: dispatchResult ? "Contacting nearest ambulance..." : "No available ambulances.",
-    emergencyRequestId: newRequest.id
+  processEmergencySms({ content, from_number }).catch((err) => {
+    console.error("Emergency SMS processing failed:", err);
   });
 }

@@ -4,8 +4,8 @@ import {
   matchProvider,
 } from "../controllers/hospitalMatch.controller.js";
 
-const hostelRoute = Router();
+const hospitalRoute = Router();
 
-hostelRoute.get("/match/web", matchProvider);
-hostelRoute.get("/match/sms", getIncomingResponse);
-export default hostelRoute;
+hospitalRoute.get("/web", matchProvider);
+hospitalRoute.post("/sms", getIncomingResponse);
+export default hospitalRoute;
