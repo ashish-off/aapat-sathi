@@ -1,7 +1,8 @@
 import { findBestHospital } from "../services/hospitalMatch.service.js";
 import { dispatchToNextAmbulance } from "../services/dispatch.service.js";
 import { db } from "../db/index.js";
-import { emergencyRequests } from "../db/schema/index.js";
+import { emergencyRequests, providerAvailability } from "../db/schema/index.js";
+import { eq, sql } from "drizzle-orm";
 import { parseSms } from "../services/parseSms.js";
 import { processEmergencySms } from "../services/telerivetRest.service.js";
 
@@ -40,6 +41,17 @@ export async function matchProvider(req, res, next) {
         status: "triaged",
       })
       .returning();
+
+    // Increment emergency queue for the matched provider
+    if (result?.recommended?.hospitalId) {
+      await db
+        .update(providerAvailability)
+        .set({
+          emergencyQueue: sql`${providerAvailability.emergencyQueue} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(providerAvailability.providerId, result.recommended.hospitalId));
+    }
 
     // Trigger ambulance dispatch
     const dispatchResult = await dispatchToNextAmbulance(newRequest.id);

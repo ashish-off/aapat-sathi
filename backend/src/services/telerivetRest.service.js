@@ -3,7 +3,8 @@ import { parseSms } from "./parseSms.js";
 import { findBestHospital } from "./hospitalMatch.service.js";
 import { dispatchToNextAmbulance } from "./dispatch.service.js";
 import { db } from "../db/index.js";
-import { emergencyRequests } from "../db/schema/index.js";
+import { emergencyRequests, providerAvailability } from "../db/schema/index.js";
+import { eq, sql } from "drizzle-orm";
 const TELERIVET_API_KEY = process.env.TELERIVET_API_KEY;
 const TELERIVET_PROJECT_ID = process.env.TELERIVET_PROJECT_ID;
 
@@ -70,6 +71,17 @@ export async function processEmergencySms({ content, from_number }) {
       status: "triaged",
     })
     .returning();
+
+  // Increment emergency queue for the matched provider
+  if (result?.recommended?.hospitalId) {
+    await db
+      .update(providerAvailability)
+      .set({
+        emergencyQueue: sql`${providerAvailability.emergencyQueue} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(providerAvailability.providerId, result.recommended.hospitalId));
+  }
 
   const dispatchResult = await dispatchToNextAmbulance(newRequest.id);
 
