@@ -28,6 +28,10 @@ const model = genAI.getGenerativeModel({
           type: SchemaType.STRING,
           description: "A short 1-2 sentence summary of the symptoms.",
         },
+        locationMentioned: {
+          type: SchemaType.STRING,
+          description: "Any location mentioned in the text (e.g. 'Lakeside, Pokhara'). Return an empty string if no location is mentioned.",
+        },
       },
       required: ["urgency", "requiredCapabilities", "symptomsSummary"],
     },
@@ -35,30 +39,34 @@ const model = genAI.getGenerativeModel({
 });
 
 /**
- * Extracts structured urgency and required capabilities from a natural language emergency message.
+ * Extracts structured urgency and required capabilities from a natural language emergency message or audio.
  * @param {string} message - The raw distress message
- * @returns {Promise<{ urgency: string, requiredCapabilities: string[], symptomsSummary: string }>}
+ * @param {object} [audioPart] - Optional inlineData object for Gemini audio processing
+ * @returns {Promise<{ urgency: string, requiredCapabilities: string[], symptomsSummary: string, locationMentioned: string }>}
  */
-export async function extractEmergencyDetails(message) {
+export async function extractEmergencyDetails(message, audioPart = null) {
   if (!process.env.GEMINI_API_KEY) {
     console.warn("GEMINI_API_KEY is missing. Returning fallback mock data.");
     return {
       urgency: "HIGH",
       requiredCapabilities: ["icu", "oxygen"],
       symptomsSummary: "Fallback summary due to missing API key.",
+      locationMentioned: "",
     };
   }
 
   const prompt = `
 You are an expert emergency medical dispatcher. 
-Analyze the following distress message and extract the urgency, required medical capabilities, and a short summary of the symptoms.
+Analyze the following distress message and extract the urgency, required medical capabilities, a short summary of the symptoms, and any rough location mentioned by the user.
 
 Distress Message:
 "${message}"
 `;
 
+  const contents = audioPart ? [prompt, audioPart] : [prompt];
+
   try {
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(contents);
     const responseText = result.response.text();
     return JSON.parse(responseText);
   } catch (error) {

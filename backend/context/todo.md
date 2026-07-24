@@ -24,10 +24,10 @@ This plan is optimized for hackathon speed: building the core database and servi
 - [x] Create a test REST endpoint to verify the orchestrator
 
 ## Phase 4: Webhooks & Integrations
-- [ ] Set up Telegram webhook (handle text, integrate Whisper for voice notes)
-- [ ] Set up Twilio SMS webhook
-- [ ] Wire webhooks into the core orchestration service
-- [ ] Implement outbound notification service (SMS to family, Telegram to matched provider)
+- [x] Set up Telegram webhook (handle text, integrate Gemini natively for voice notes)
+- [~] Set up Twilio SMS webhook (Skipped for now)
+- [x] Wire webhooks into the core orchestration service
+- [x] Implement outbound notification service (Telegram to matched provider)
 
 ## Phase 5: Polish & Frontend Support
 - [ ] Build public API for the frontend landing page (search/browse providers)

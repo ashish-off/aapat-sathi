@@ -5,6 +5,24 @@ import {
 } from "./hospitalMatch.service.js";
 import { db } from "../db/index.js";
 import { emergencyRequests } from "../db/schema/emergencyRequests.js";
+import { sendTelegramMessage } from "../telegram/sender.js";
+
+/**
+ * Helper to fetch rough coordinates using OpenStreetMap Nominatim API
+ */
+async function geocodeLocation(locationString) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationString)}&format=json&limit=1`;
+    const response = await fetch(url, { headers: { "User-Agent": "AapatSathi/1.0" } });
+    const data = await response.json();
+    if (data && data.length > 0) {
+      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+    }
+  } catch (e) {
+    console.error("Geocoding failed:", e);
+  }
+  return null;
+}
 
 /**
  * The core engine of the system.
@@ -16,9 +34,25 @@ export async function processEmergencyMessage(
   longitude,
   senderContact,
   channel,
+  audioPart = null
 ) {
   // 1. Triage using AI
-  const triageDetails = await extractEmergencyDetails(rawMessage);
+  const triageDetails = await extractEmergencyDetails(rawMessage, audioPart);
+
+  console.log(triageDetails);
+
+  // 1.5 Extract Rough Location (if GPS coordinates are missing)
+  if ((latitude == null || longitude == null) && triageDetails.locationMentioned) {
+    const coords = await geocodeLocation(triageDetails.locationMentioned);
+    if (coords) {
+      latitude = coords.lat;
+      longitude = coords.lon;
+    }
+  }
+
+  if (latitude == null || longitude == null) {
+    throw new Error("LOCATION_REQUIRED");
+  }
 
   // 2. Match with capabilities
   let matchedProviders = await findMatchingProviders(
@@ -57,6 +91,21 @@ export async function processEmergencyMessage(
       status: providerId ? "triaged" : "pending",
     })
     .returning();
+
+  // 5. Notify the Matched Provider (Outbound Telegram Alert)
+  if (bestMatch && bestMatch.telegramChatId) {
+    try {
+      const alertMsg = `🚨 **INCOMING EMERGENCY** 🚨\n\n` +
+        `**Urgency:** ${triageDetails.urgency}\n` +
+        `**Symptoms:** ${triageDetails.symptomsSummary}\n\n` +
+        `**Patient Contact:** ${senderContact}\n` +
+        `Please prepare your facilities.`;
+      
+      await sendTelegramMessage(bestMatch.telegramChatId, alertMsg);
+    } catch (e) {
+      console.error("Failed to notify provider via Telegram:", e);
+    }
+  }
 
   return {
     triageDetails,
