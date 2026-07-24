@@ -50,7 +50,9 @@ export async function matchProvider(req, res, next) {
           emergencyQueue: sql`${providerAvailability.emergencyQueue} + 1`,
           updatedAt: new Date(),
         })
-        .where(eq(providerAvailability.providerId, result.recommended.hospitalId));
+        .where(
+          eq(providerAvailability.providerId, result.recommended.hospitalId),
+        );
     }
 
     // Trigger ambulance dispatch

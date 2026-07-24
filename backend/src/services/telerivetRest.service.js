@@ -34,7 +34,6 @@ export async function sendFollowUpSms(toNumber, content) {
 
 export async function processEmergencySms({ content, from_number }) {
   const parsedData = await parseSms(content);
-
   if (parsedData.error) {
     await sendFollowUpSms(from_number, `Error: ${parsedData.error}`);
     return;
@@ -80,7 +79,9 @@ export async function processEmergencySms({ content, from_number }) {
         emergencyQueue: sql`${providerAvailability.emergencyQueue} + 1`,
         updatedAt: new Date(),
       })
-      .where(eq(providerAvailability.providerId, result.recommended.hospitalId));
+      .where(
+        eq(providerAvailability.providerId, result.recommended.hospitalId),
+      );
   }
 
   const dispatchResult = await dispatchToNextAmbulance(newRequest.id);
