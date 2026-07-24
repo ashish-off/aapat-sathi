@@ -57,7 +57,7 @@ export function registerHandlers() {
     await ctx.reply("⏳ Triaging emergency and locating nearest capable hospital...");
 
     try {
-      const { triageDetails, matchedProvider } = await processEmergencyMessage(
+      const { triageDetails, matchedProvider, alternativeProviders } = await processEmergencyMessage(
         textContent,
         location.latitude,
         location.longitude,
@@ -71,14 +71,22 @@ export function registerHandlers() {
         return;
       }
 
-      await ctx.reply(
-        `🚨 **URGENCY: ${triageDetails.urgency}** 🚨\n\n` +
+      let replyMessage = `🚨 **URGENCY: ${triageDetails.urgency}** 🚨\n\n` +
         `**Symptoms:** ${triageDetails.symptomsSummary}\n\n` +
-        `🏥 **Nearest Hospital:** ${matchedProvider.name}\n` +
+        `🏥 **Primary Hospital:** ${matchedProvider.name}\n` +
         `📍 **Address:** ${matchedProvider.address} (${matchedProvider.distanceKm.toFixed(1)} km away)\n` +
         `📞 **Contact:** ${matchedProvider.phone}\n\n` +
-        `*The hospital has been alerted of your arrival.*`
-      );
+        `*The primary hospital has been alerted of your arrival.*\n`;
+
+      if (alternativeProviders && alternativeProviders.length > 1) {
+        replyMessage += `\n**Alternative Nearby Options:**\n`;
+        for (let i = 1; i < alternativeProviders.length; i++) {
+          const alt = alternativeProviders[i];
+          replyMessage += `- ${alt.name} (${alt.distanceKm.toFixed(1)} km) 📞 ${alt.phone}\n`;
+        }
+      }
+
+      await ctx.reply(replyMessage);
 
     } catch (error) {
       if (error.message === "LOCATION_REQUIRED") {
