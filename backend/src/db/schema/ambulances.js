@@ -7,6 +7,7 @@ export const ambulances = pgTable("ambulances", {
   vehicleNumber: varchar("vehicle_number", { length: 50 }),
   driverName: varchar("driver_name", { length: 255 }),
   driverPhone: varchar("driver_phone", { length: 20 }),
+  region: varchar("region", { length: 255 }),
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
   status: varchar("status", { length: 20 }).default("available"), // available, busy, maintenance

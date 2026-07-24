@@ -227,7 +227,7 @@ export default function AmbulanceList({ initialAmbulances }: { initialAmbulances
 
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400 font-medium">Base Region:</span>
-                    <span className="font-semibold text-slate-900">{amb.region || "Kathmandu Valley"}</span>
+                    <span className="font-semibold text-slate-900">{amb.region || "Nepal"}</span>
                   </div>
 
                   <div className="flex items-center justify-between">

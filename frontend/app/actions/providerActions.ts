@@ -49,8 +49,9 @@ export async function registerAmbulanceAction(formData: FormData) {
     vehicleNumber: formData.get("vehicleNumber"),
     driverName: formData.get("driverName"),
     driverPhone: formData.get("driverPhone"),
-    latitude: parseFloat(formData.get("latitude") as string || "27.7172"),
-    longitude: parseFloat(formData.get("longitude") as string || "85.324"),
+    region: formData.get("region"),
+    latitude: parseFloat((formData.get("latitude") as string) || "27.7172"),
+    longitude: parseFloat((formData.get("longitude") as string) || "85.324"),
   };
 
   try {

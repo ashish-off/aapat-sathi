@@ -6,7 +6,7 @@ import { dispatchToNextAmbulance } from "../services/dispatch.service.js";
 // Register a new ambulance
 export async function registerAmbulance(req, res, next) {
   try {
-    const { vehicleNumber, driverName, driverPhone, latitude, longitude } = req.body;
+    const { vehicleNumber, driverName, driverPhone, latitude, longitude, region } = req.body;
 
     if (!vehicleNumber || !latitude || !longitude) {
       return res.status(400).json({ error: "vehicleNumber, latitude, and longitude are required" });
@@ -18,6 +18,7 @@ export async function registerAmbulance(req, res, next) {
         vehicleNumber,
         driverName,
         driverPhone,
+        region: region || "Kathmandu Valley",
         latitude: Number(latitude),
         longitude: Number(longitude),
         status: "available",
