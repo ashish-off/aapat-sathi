@@ -1,10 +1,8 @@
 import { extractEmergencyDetails } from "./aiService.js";
-import {
-  findMatchingProviders,
-  findFallbackProviders,
-} from "./hospitalMatch.service.js";
+import { findBestHospital } from "./hospitalMatch.service.js";
 import { db } from "../db/index.js";
-import { emergencyRequests } from "../db/schema/emergencyRequests.js";
+import { emergencyRequests, healthcareProviders } from "../db/schema/index.js";
+import { inArray } from "drizzle-orm";
 import { sendTelegramMessage } from "../telegram/sender.js";
 
 /**
@@ -52,28 +50,42 @@ export async function processEmergencyMessage(
     throw new Error("LOCATION_REQUIRED");
   }
 
-  // 2. Match with capabilities (get up to 3 for alternatives)
-  let matchedProviders = await findMatchingProviders(
-    latitude,
-    longitude,
-    triageDetails.requiredCapabilities,
-    3,
-  );
+  // 2. Match with best suitable availability (Scoring Engine: Distance, ICU, Queue, Ambulances)
+  const matchResult = await findBestHospital({
+    lat: latitude,
+    lon: longitude,
+    emergencyType: triageDetails.urgency,
+  });
 
-  // 3. Fallback if no exact match (returns hospitals with ANY matching capabilities)
-  if (matchedProviders.length === 0) {
-    matchedProviders = await findFallbackProviders(
-      latitude,
-      longitude,
-      triageDetails.requiredCapabilities,
-      3,
-    );
+  let bestMatch = null;
+  let alternativeProviders = [];
+  const providerId = matchResult.recommended ? matchResult.recommended.hospitalId : null;
+
+  if (providerId) {
+    const allIds = [
+      matchResult.recommended.hospitalId,
+      ...matchResult.alternatives.map(a => a.hospitalId)
+    ];
+
+    const providersData = await db
+      .select()
+      .from(healthcareProviders)
+      .where(inArray(healthcareProviders.id, allIds));
+
+    const providerMap = new Map(providersData.map(p => [p.id, p]));
+    
+    bestMatch = providerMap.get(matchResult.recommended.hospitalId) || null;
+    if (bestMatch) bestMatch.distanceKm = matchResult.recommended.distanceKm;
+
+    alternativeProviders = matchResult.alternatives.map(alt => {
+      const p = providerMap.get(alt.hospitalId);
+      if (p) {
+        p.distanceKm = alt.distanceKm;
+        return p;
+      }
+      return null;
+    }).filter(Boolean);
   }
-
-  const bestMatch = matchedProviders[0] || null;
-  const providerId = bestMatch ? bestMatch.id : null;
-
-  // 4. Save to Database
   const [requestRecord] = await db
     .insert(emergencyRequests)
     .values({
@@ -108,7 +120,7 @@ export async function processEmergencyMessage(
   return {
     triageDetails,
     matchedProvider: bestMatch,
-    alternativeProviders: matchedProviders, // Return the full list
+    alternativeProviders: alternativeProviders, // Return the full list fetched from DB
     requestId: requestRecord.id,
   };
 }
