@@ -2,12 +2,16 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Mic, MicOff, Send, Activity, AlertTriangle, Loader2, ArrowRight, X, CheckCircle2 } from "lucide-react";
+import axios from "axios";
 
 type AIResult = {
   urgency: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
   symptomsSummary: string;
   requiredCapabilities: string[];
   recommendedAction: string;
+  matchedProvider?: any;
+  alternativeProviders?: any[];
+  ambulances?: any[];
 };
 
 export default function AIAssistant() {
@@ -75,7 +79,7 @@ export default function AIAssistant() {
     }
   };
 
-  const handleAnalyze = (e: React.FormEvent) => {
+  const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
@@ -87,40 +91,38 @@ export default function AIAssistant() {
     setIsAnalyzing(true);
     setAnalysisResult(null);
 
-    // Simulated AI response (Mock UI demonstration for now)
-    setTimeout(() => {
-      const lower = inputText.toLowerCase();
-      let urgency: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" = "HIGH";
-      let capabilities = ["ICU", "Emergency Care", "Oxygen"];
-      let summary = "Emergency distress & location received. Matching nearby dispatch units.";
-      let action = "Locating nearest medical facility with trauma & ICU readiness.";
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+      const res = await axios.post(`${API_URL}/api/orchestrate`,{
+        rawMessage: inputText,
+          latitude: null, // Let AI extract from text
+          longitude: null,
+          senderContact: "Web User",
+          channel: "web",
+        })
 
-      if (lower.includes("chest pain") || lower.includes("heart") || lower.includes("छाती") || lower.includes("मुटु")) {
-        urgency = "CRITICAL";
-        capabilities = ["Cardiology", "ICU", "Cath Lab", "Oxygen"];
-        summary = "Possible acute cardiac distress reported.";
-        action = "Matching nearest cardiology & ICU facility for priority dispatch.";
-      } else if (lower.includes("accident") || lower.includes("bleed") || lower.includes("दुर्घटना") || lower.includes("रगत")) {
-        urgency = "CRITICAL";
-        capabilities = ["Trauma", "Surgery", "Blood Bank", "ICU"];
-        summary = "Trauma/injury requiring immediate surgical team.";
-        action = "Directing to emergency trauma center with active surgical availability.";
-      } else if (lower.includes("baby") || lower.includes("pregnancy") || lower.includes("गर्भवती") || lower.includes("सुत्केरी")) {
-        urgency = "HIGH";
-        capabilities = ["Maternity", "NICU", "Pediatrics", "Emergency Care"];
-        summary = "Obstetric emergency / maternal healthcare distress.";
-        action = "Connecting to specialized maternity hospital with active NICU.";
-      }
+      
+      const data = res.data;
+
+      console.log(data);
 
       setAnalysisResult({
-        urgency,
-        symptomsSummary: summary,
-        requiredCapabilities: capabilities,
-        recommendedAction: action,
+        urgency: data.triageDetails.urgency,
+        symptomsSummary: data.triageDetails.symptomsSummary,
+        requiredCapabilities: data.triageDetails.requiredCapabilities,
+        recommendedAction: data.matchedProvider
+          ? `Dispatched to ${data.matchedProvider.name} (${data.matchedProvider.distanceKm?.toFixed(1) || 0} km away)`
+          : "Could not find a suitable hospital nearby.",
+        matchedProvider: data.matchedProvider,
+        alternativeProviders: data.alternativeProviders,
+        ambulances: data.ambulances,
       });
-
+    } catch (error) {
+      console.error(error);
+      alert("Error analyzing emergency. Please ensure the backend is running and location is mentioned.");
+    } finally {
       setIsAnalyzing(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -257,7 +259,63 @@ export default function AIAssistant() {
 
             <div>
               <p className="text-sm font-medium text-slate-100">{analysisResult.symptomsSummary}</p>
-              <p className="text-xs text-slate-400 mt-1">{analysisResult.recommendedAction}</p>
+              
+              {analysisResult.matchedProvider && (
+                <div className="mt-4 p-3 bg-slate-800 border border-slate-700 rounded-lg">
+                  <p className="text-xs text-slate-400 mb-1">Primary Dispatch Hospital</p>
+                  <p className="font-bold text-white text-lg">{analysisResult.matchedProvider.name}</p>
+                  <div className="flex items-center gap-4 mt-1 text-sm text-slate-300">
+                    <span>📍 {analysisResult.matchedProvider.address}</span>
+                    <span>🛣️ {analysisResult.matchedProvider.distanceKm?.toFixed(1)} km</span>
+                    <span>📞 {analysisResult.matchedProvider.phone}</span>
+                  </div>
+                </div>
+              )}
+
+              {analysisResult.alternativeProviders && analysisResult.alternativeProviders.length > 1 && (
+                <div className="mt-3">
+                  <p className="text-xs text-slate-400 mb-1">Alternative Options</p>
+                  <div className="space-y-1">
+                    {analysisResult.alternativeProviders.slice(1).map((alt: any) => (
+                      <div key={alt.id} className="flex justify-between text-xs bg-slate-800/50 p-2 rounded">
+                        <span className="text-slate-200">{alt.name}</span>
+                        <div className="flex gap-3 text-slate-400">
+                          <span>{alt.distanceKm?.toFixed(1)} km</span>
+                          <span>📞 {alt.phone || 'N/A'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {analysisResult.ambulances && analysisResult.ambulances.length > 0 && (
+                <div className="mt-4 p-3 bg-red-900/20 border border-red-800/30 rounded-lg">
+                  <p className="text-xs text-red-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    Nearest Available Ambulances
+                  </p>
+                  <div className="space-y-2">
+                    {analysisResult.ambulances.map((amb: any) => (
+                      <div key={amb.id} className="flex justify-between items-center text-xs bg-slate-900/50 p-2.5 rounded border border-slate-700/50">
+                        <div>
+                          <span className="text-slate-200 font-bold block">{amb.vehicleNumber}</span>
+                          <span className="text-slate-400 text-[10px]">{amb.driverName}</span>
+                        </div>
+                        <div className="text-right flex flex-col gap-0.5">
+                          <span className="text-red-300 font-bold">📞 {amb.driverPhone}</span>
+                          <span className="text-slate-400 text-[10px]">{amb.distanceKm?.toFixed(1)} km away</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-slate-400 mt-4">{analysisResult.recommendedAction}</p>
             </div>
 
             <div>
