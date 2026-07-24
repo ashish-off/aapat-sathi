@@ -39,8 +39,6 @@ export async function processEmergencyMessage(
   // 1. Triage using AI
   const triageDetails = await extractEmergencyDetails(rawMessage, audioPart);
 
-  console.log(triageDetails);
-
   // 1.5 Extract Rough Location (if GPS coordinates are missing)
   if ((latitude == null || longitude == null) && triageDetails.locationMentioned) {
     const coords = await geocodeLocation(triageDetails.locationMentioned);
@@ -54,12 +52,12 @@ export async function processEmergencyMessage(
     throw new Error("LOCATION_REQUIRED");
   }
 
-  // 2. Match with capabilities
+  // 2. Match with capabilities (get up to 3 for alternatives)
   let matchedProviders = await findMatchingProviders(
     latitude,
     longitude,
     triageDetails.requiredCapabilities,
-    1,
+    3,
   );
 
   // 3. Fallback if no exact match (returns hospitals with ANY matching capabilities)
@@ -68,7 +66,7 @@ export async function processEmergencyMessage(
       latitude,
       longitude,
       triageDetails.requiredCapabilities,
-      1,
+      3,
     );
   }
 
@@ -110,6 +108,7 @@ export async function processEmergencyMessage(
   return {
     triageDetails,
     matchedProvider: bestMatch,
+    alternativeProviders: matchedProviders, // Return the full list
     requestId: requestRecord.id,
   };
 }
