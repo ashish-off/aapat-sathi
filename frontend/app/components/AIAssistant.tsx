@@ -11,7 +11,6 @@ type AIResult = {
 
 export default function AIAssistant() {
   const [inputText, setInputText] = useState("");
-  const [language, setLanguage] = useState<"en-US" | "ne-NP">("ne-NP");
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -32,7 +31,8 @@ export default function AIAssistant() {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = language;
+    // Automatic speech recognition (supports multi-language speech input)
+    recognition.lang = ""; 
 
     recognition.onresult = (event: any) => {
       let currentTranscript = "";
@@ -52,11 +52,11 @@ export default function AIAssistant() {
     };
 
     recognitionRef.current = recognition;
-  }, [language]);
+  }, []);
 
   const toggleListening = () => {
     if (!speechSupported) {
-      alert("Speech recognition is not supported in your browser. Please type your emergency description.");
+      alert("Speech recognition is not supported in your browser. Please type your emergency details.");
       return;
     }
 
@@ -66,7 +66,6 @@ export default function AIAssistant() {
     } else {
       try {
         if (recognitionRef.current) {
-          recognitionRef.current.lang = language;
           recognitionRef.current.start();
           setIsListening(true);
         }
@@ -93,24 +92,24 @@ export default function AIAssistant() {
       const lower = inputText.toLowerCase();
       let urgency: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" = "HIGH";
       let capabilities = ["ICU", "Emergency Care", "Oxygen"];
-      let summary = "Emergency distress reported. Requires immediate medical attention.";
-      let action = "Dispatching nearest emergency provider with trauma and ICU readiness.";
+      let summary = "Emergency distress & location received. Matching nearby dispatch units.";
+      let action = "Locating nearest medical facility with trauma & ICU readiness.";
 
       if (lower.includes("chest pain") || lower.includes("heart") || lower.includes("छाती") || lower.includes("मुटु")) {
         urgency = "CRITICAL";
         capabilities = ["Cardiology", "ICU", "Cath Lab", "Oxygen"];
-        summary = "Possible acute cardiac event or severe chest distress.";
-        action = "High-priority cardiology & ICU facility required immediately.";
+        summary = "Possible acute cardiac distress reported.";
+        action = "Matching nearest cardiology & ICU facility for priority dispatch.";
       } else if (lower.includes("accident") || lower.includes("bleed") || lower.includes("दुर्घटना") || lower.includes("रगत")) {
         urgency = "CRITICAL";
         capabilities = ["Trauma", "Surgery", "Blood Bank", "ICU"];
-        summary = "Trauma/injury requiring immediate surgical evaluation.";
-        action = "Directing to emergency trauma center with open operating theater.";
+        summary = "Trauma/injury requiring immediate surgical team.";
+        action = "Directing to emergency trauma center with active surgical availability.";
       } else if (lower.includes("baby") || lower.includes("pregnancy") || lower.includes("गर्भवती") || lower.includes("सुत्केरी")) {
         urgency = "HIGH";
         capabilities = ["Maternity", "NICU", "Pediatrics", "Emergency Care"];
         summary = "Obstetric emergency / maternal healthcare distress.";
-        action = "Connecting to specialized maternity hospital with NICU.";
+        action = "Connecting to specialized maternity hospital with active NICU.";
       }
 
       setAnalysisResult({
@@ -127,124 +126,94 @@ export default function AIAssistant() {
   return (
     <div className="w-full max-w-3xl mx-auto my-6">
       {/* Dispatch Assistance Card */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200/60 mb-2">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all space-y-6">
+        {/* Card Header & Notice */}
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200/60">
               <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
-              Emergency Triage Assistant
+              Emergency Dispatch Assistant
             </span>
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-              Describe Emergency Details
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              State patient condition or symptoms in English or Nepali.
-            </p>
           </div>
 
-          {/* Language Selector */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg self-start sm:self-center border border-slate-200">
-            <button
-              type="button"
-              onClick={() => {
-                setLanguage("ne-NP");
-                if (isListening) {
-                  recognitionRef.current?.stop();
-                  setIsListening(false);
-                }
-              }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                language === "ne-NP"
-                  ? "bg-white text-slate-900 shadow-sm border border-slate-200"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              🇳🇵 नेपाली
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLanguage("en-US");
-                if (isListening) {
-                  recognitionRef.current?.stop();
-                  setIsListening(false);
-                }
-              }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                language === "en-US"
-                  ? "bg-white text-slate-900 shadow-sm border border-slate-200"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              🇬🇧 English
-            </button>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Report Emergency & Location
+          </h2>
+          
+          <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+            <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <span className="font-bold block text-amber-950">Required Information:</span>
+              Please include both <strong>Emergency Details / Symptoms</strong> and your <strong>Current Location</strong> (city, area, or landmark) for accurate triage and hospital matching.
+            </div>
           </div>
         </div>
 
-        {/* Input Form */}
-        <form onSubmit={handleAnalyze} className="space-y-4">
-          <div className="relative">
-            <textarea
-              rows={3}
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder={
-                language === "ne-NP"
-                  ? "बिरामीको अवस्था वा लक्षणहरू वर्णन गर्नुहोस् (उदा. मुटु दुखाई, श्वासप्रश्वासमा समस्या)..."
-                  : "Describe symptoms or situation (e.g., severe chest pain, breathing difficulty, accident)..."
-              }
-              className="w-full bg-slate-50 border border-slate-300 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 rounded-xl p-4 text-slate-900 text-base placeholder:text-slate-400 resize-none transition-all"
-            />
-
-            {/* Voice Input Trigger */}
-            <div className="absolute bottom-3 right-3 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={toggleListening}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                  isListening
-                    ? "bg-red-600 text-white border-red-700 animate-pulse shadow-md"
-                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-100 hover:text-slate-900 shadow-xs"
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                  />
-                </svg>
-                {isListening
-                  ? language === "ne-NP"
-                    ? "सुन्दैछ..."
-                    : "Listening..."
-                  : language === "ne-NP"
-                  ? "बोल्नुहोस् (Speak)"
-                  : "Speak to Sathi"}
-              </button>
+        {/* Separate Prominent "Speak to Aapat Sathi" Button */}
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+              isListening ? "bg-red-600 text-white animate-bounce" : "bg-red-100 text-red-600"
+            }`}>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Speak to Aapat Sathi</h3>
+              <p className="text-xs text-slate-500">Speak naturally in any language (Nepali, English, etc.)</p>
             </div>
           </div>
 
-          {/* Speech Active Banner */}
-          {isListening && (
-            <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
-              </span>
-              <span>
-                {language === "ne-NP"
-                  ? "नेपालीमा बोलिरहनु भएको छ... (Speak now in Nepali)"
-                  : "Speaking in English... State patient symptoms clearly."}
-              </span>
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={toggleListening}
+            className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs ${
+              isListening
+                ? "bg-red-600 text-white border border-red-700 animate-pulse shadow-md"
+                : "bg-red-600 hover:bg-red-700 text-white"
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+            {isListening ? "Listening... (Click to Stop)" : "Start Voice Input"}
+          </button>
+        </div>
+
+        {/* Live Listening Banner */}
+        {isListening && (
+          <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+            </span>
+            <span>Listening to your voice... Speak your emergency details and location now.</span>
+          </div>
+        )}
+
+        {/* Input Form for Text */}
+        <form onSubmit={handleAnalyze} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
+              <span>Emergency & Location Description</span>
+              <span className="text-slate-400 font-normal">Type or review spoken text</span>
+            </label>
+            <textarea
+              rows={4}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder="Describe emergency symptoms and location. E.g.: 'Severe chest pain and difficulty breathing near New Road, Kathmandu' or 'गम्भीर दुर्घटना, नयाँ बानेश्वर, काठमाडौँ'..."
+              className="w-full bg-slate-50 border border-slate-300 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 rounded-xl p-4 text-slate-900 text-sm placeholder:text-slate-400 resize-none transition-all"
+            />
+          </div>
 
           {/* Action Row */}
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between pt-1">
             <span className="text-xs text-slate-500 hidden sm:inline">
-              Instant Triage & Hospital Capability Matching
+              Instant Triage & Capability Matching Engine
             </span>
             <button
               type="submit"
@@ -273,7 +242,7 @@ export default function AIAssistant() {
 
         {/* AI Analysis Preview Result */}
         {analysisResult && (
-          <div className="mt-6 p-5 bg-slate-900 text-white rounded-xl space-y-4 transition-all">
+          <div className="p-5 bg-slate-900 text-white rounded-xl space-y-4 transition-all">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Triage Assessment</span>
