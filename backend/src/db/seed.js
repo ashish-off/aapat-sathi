@@ -1,135 +1,201 @@
 import { db } from "./index.js";
-import { healthcareProviders } from "./schema/providers.js";
-import { providerAvailability } from "./schema/providerAvailability.js";
-
-const pokharaProviders = [
-  {
-    name: "Manipal Teaching Hospital",
-    providerType: "hospital",
-    address: "Phulbari, Pokhara",
-    phone: "061-526416",
-    latitude: 28.2435,
-    longitude: 83.9928,
-    capabilities: ["icu", "surgery", "cardiology", "orthopedics", "oxygen"],
-    status: "OPEN",
-  },
-  {
-    name: "Gandaki Medical College",
-    providerType: "hospital",
-    address: "Prithivi Chowk, Pokhara",
-    phone: "061-538595",
-    latitude: 28.2045,
-    longitude: 83.9877,
-    capabilities: ["icu", "surgery", "trauma", "oxygen"],
-    status: "OPEN",
-  },
-  {
-    name: "Western Regional Hospital",
-    providerType: "hospital",
-    address: "Ramghat, Pokhara",
-    phone: "061-520066",
-    latitude: 28.2140,
-    longitude: 84.0019,
-    capabilities: ["icu", "maternity", "pediatrics", "general"],
-    status: "OPEN",
-  },
-  {
-    name: "Charak Memorial Hospital",
-    providerType: "hospital",
-    address: "Bagletol, Pokhara",
-    phone: "061-528256",
-    latitude: 28.2152,
-    longitude: 83.9890,
-    capabilities: ["icu", "surgery", "cardiology"],
-    status: "OPEN",
-  },
-  {
-    name: "Fewa City Hospital",
-    providerType: "hospital",
-    address: "Srijana Chowk, Pokhara",
-    phone: "061-528489",
-    latitude: 28.2163,
-    longitude: 83.9820,
-    capabilities: ["icu", "oxygen", "surgery"],
-    status: "OPEN",
-  },
-  {
-    name: "Metrocity Hospital",
-    providerType: "hospital",
-    address: "Srijana Chowk, Pokhara",
-    phone: "061-524271",
-    latitude: 28.2058,
-    longitude: 83.9821,
-    capabilities: ["trauma", "surgery", "oxygen"],
-    status: "OPEN",
-  },
-  {
-    name: "Pokhara Academy of Health Sciences",
-    providerType: "hospital",
-    address: "Ramghat, Pokhara",
-    phone: "061-520066",
-    latitude: 28.2145,
-    longitude: 84.0010,
-    capabilities: ["general", "maternity", "pediatrics"],
-    status: "OPEN",
-  },
-  {
-    name: "Kaski Sewa Hospital",
-    providerType: "hospital",
-    address: "Zero Kilometer, Pokhara",
-    phone: "061-520188",
-    latitude: 28.2160,
-    longitude: 83.9870,
-    capabilities: ["general", "oxygen"],
-    status: "OPEN",
-  },
-  {
-    name: "Om Hospital Pokhara",
-    providerType: "hospital",
-    address: "Mahendrapool, Pokhara",
-    phone: "061-521666",
-    latitude: 28.2110,
-    longitude: 83.9805,
-    capabilities: ["maternity", "pediatrics", "oxygen"],
-    status: "OPEN",
-  },
-  {
-    name: "Lake City Hospital",
-    providerType: "hospital",
-    address: "Lakeside, Pokhara",
-    phone: "061-464522",
-    latitude: 28.2000,
-    longitude: 83.9600,
-    capabilities: ["general", "surgery", "oxygen"],
-    status: "OPEN",
-  },
-];
+import {
+  healthcareProviders,
+  users,
+  ambulances,
+  providerAvailability,
+  emergencyRequests,
+  ambulanceDispatches,
+  emergencyUpdates,
+  notifications,
+} from "./schema/index.js";
+import bcrypt from "bcryptjs";
 
 async function seed() {
-  console.log("Seeding Pokhara healthcare providers...");
+  console.log("Seeding database...");
+
   try {
-    for (const provider of pokharaProviders) {
-      // 1. Insert Provider
-      const [insertedProvider] = await db
-        .insert(healthcareProviders)
-        .values(provider)
-        .returning();
+    // Clear existing data (in reverse order of dependencies)
+    console.log("Clearing existing data...");
+    await db.delete(notifications);
+    await db.delete(emergencyUpdates);
+    await db.delete(ambulanceDispatches);
+    await db.delete(emergencyRequests);
+    await db.delete(providerAvailability);
+    await db.delete(ambulances);
+    await db.delete(users);
+    await db.delete(healthcareProviders);
 
-      // 2. Insert Default Availability
-      await db.insert(providerAvailability).values({
-        providerId: insertedProvider.id,
-        availableAmbulances: Math.floor(Math.random() * 5), // 0 to 4
-        availableIcuBeds: provider.capabilities.includes("icu") ? Math.floor(Math.random() * 10) : 0,
-        availableEmergencyBeds: Math.floor(Math.random() * 15) + 2, // 2 to 16
-        emergencyQueue: Math.floor(Math.random() * 5), // 0 to 4
-      });
+    // 1. Providers
+    console.log("Inserting providers...");
+    const [hospital1, hospital2] = await db
+      .insert(healthcareProviders)
+      .values([
+        {
+          name: "Bir Hospital",
+          providerType: "hospital",
+          address: "Kantipath, Kathmandu",
+          phone: "01-4221988",
+          latitude: 27.7056,
+          longitude: 85.3148,
+          capabilities: ["icu", "trauma", "cardiology"],
+          status: "OPEN",
+          isActive: true,
+        },
+        {
+          name: "Patan Hospital",
+          providerType: "hospital",
+          address: "Lagankhel, Lalitpur",
+          phone: "01-5522278",
+          latitude: 27.6681,
+          longitude: 85.3206,
+          capabilities: ["icu", "pediatrics", "surgery"],
+          status: "OPEN",
+          isActive: true,
+        },
+      ])
+      .returning();
 
-      console.log(`✅ Seeded: ${insertedProvider.name}`);
-    }
-    console.log("Seeding complete! ✨");
+    // 2. Provider Availability
+    console.log("Inserting provider availability...");
+    await db.insert(providerAvailability).values([
+      {
+        providerId: hospital1.id,
+        availableAmbulances: 2,
+        availableIcuBeds: 5,
+        availableEmergencyBeds: 10,
+        emergencyQueue: 1,
+      },
+      {
+        providerId: hospital2.id,
+        availableAmbulances: 1,
+        availableIcuBeds: 2,
+        availableEmergencyBeds: 8,
+        emergencyQueue: 0,
+      },
+    ]);
+
+    // 3. Users
+    console.log("Inserting users...");
+    const passwordHash = await bcrypt.hash("password123", 10);
+    const [adminUser, staffUser] = await db
+      .insert(users)
+      .values([
+        {
+          name: "System Admin",
+          email: "admin@aapatsathi.com",
+          passwordHash,
+          role: "ADMIN",
+        },
+        {
+          providerId: hospital1.id,
+          name: "Bir Hospital Staff",
+          email: "staff@birhospital.com",
+          passwordHash,
+          role: "PROVIDER_STAFF",
+        },
+      ])
+      .returning();
+
+    // 4. Ambulances
+    console.log("Inserting ambulances...");
+    const [ambulance1, ambulance2] = await db
+      .insert(ambulances)
+      .values([
+        {
+          providerId: hospital1.id,
+          vehicleNumber: "BA 1 KHA 1234",
+          driverName: "Ram Bahadur",
+          driverPhone: "9841000001",
+          latitude: 27.7056,
+          longitude: 85.3148,
+          status: "available",
+        },
+        {
+          providerId: hospital2.id,
+          vehicleNumber: "BA 2 KHA 5678",
+          driverName: "Shyam Kumar",
+          driverPhone: "9841000002",
+          latitude: 27.6681,
+          longitude: 85.3206,
+          status: "available",
+        },
+      ])
+      .returning();
+
+    // 5. Emergency Requests
+    console.log("Inserting emergency requests...");
+    const [request1] = await db
+      .insert(emergencyRequests)
+      .values([
+        {
+          senderContact: "9841999999",
+          channel: "telegram_text",
+          rawMessage: "Need help, severe chest pain at Thamel",
+          extractedSymptom: "severe chest pain",
+          urgencyLevel: "critical",
+          requiredCapabilities: ["cardiology", "icu"],
+          latitude: 27.7154,
+          longitude: 85.3123,
+          locationName: "Thamel, Kathmandu",
+          providerId: hospital1.id,
+          ambulanceId: ambulance1.id,
+          status: "ambulance_assigned",
+        },
+        {
+          senderContact: "9841888888",
+          channel: "sms",
+          rawMessage: "Bike accident, bleeding leg in Kupondole",
+          extractedSymptom: "bleeding leg, accident",
+          urgencyLevel: "high",
+          requiredCapabilities: ["trauma"],
+          latitude: 27.6833,
+          longitude: 85.3167,
+          locationName: "Kupondole, Lalitpur",
+          status: "pending",
+        },
+      ])
+      .returning();
+
+    // 6. Ambulance Dispatches
+    console.log("Inserting ambulance dispatches...");
+    await db.insert(ambulanceDispatches).values([
+      {
+        emergencyRequestId: request1.id,
+        ambulanceId: ambulance1.id,
+        status: "accepted",
+      },
+    ]);
+
+    // 7. Emergency Updates
+    console.log("Inserting emergency updates...");
+    await db.insert(emergencyUpdates).values([
+      {
+        emergencyRequestId: request1.id,
+        status: "ambulance_assigned",
+        message:
+          "Ambulance BA 1 KHA 1234 has been dispatched and is on the way.",
+      },
+    ]);
+
+    // 8. Notifications
+    console.log("Inserting notifications...");
+    await db.insert(notifications).values([
+      {
+        emergencyRequestId: request1.id,
+        recipientType: "patient",
+        recipient: "9841999999",
+        method: "sms",
+        messagePayload:
+          "Ambulance dispatched. Driver: Ram Bahadur (9841000001)",
+        status: "sent",
+      },
+    ]);
+
+    console.log("Database seeding completed successfully!");
     process.exit(0);
   } catch (error) {
-    console.error("Error seeding data:", error);
+    console.error("Error seeding database:", error);
     process.exit(1);
   }
 }
