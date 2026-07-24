@@ -1,52 +1,25 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import OpenAI from "openai";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
-const model = genAI.getGenerativeModel({
-  model: "gemini-flash-latest",
-  generationConfig: {
-    responseMimeType: "application/json",
-    responseSchema: {
-      type: SchemaType.OBJECT,
-      properties: {
-        urgency: {
-          type: SchemaType.STRING,
-          description: "Urgency level of the emergency",
-          enum: ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
-        },
-        requiredCapabilities: {
-          type: SchemaType.ARRAY,
-          description: "List of required medical capabilities based on the symptoms. Choose from common capabilities like: trauma, icu, maternity, burns, pediatrics, cardiology, neurology, orthopedics, oxygen, surgery, general.",
-          items: {
-            type: SchemaType.STRING,
-          },
-        },
-        symptomsSummary: {
-          type: SchemaType.STRING,
-          description: "A short 1-2 sentence summary of the symptoms.",
-        },
-        locationMentioned: {
-          type: SchemaType.STRING,
-          description: "Any location mentioned in the text (e.g. 'Lakeside, Pokhara'). Return an empty string if no location is mentioned.",
-        },
-      },
-      required: ["urgency", "requiredCapabilities", "symptomsSummary"],
-    },
-  },
+const client = new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
 });
 
 /**
- * Extracts structured urgency and required capabilities from a natural language emergency message or audio.
+ * Extracts structured urgency and required capabilities from a natural language emergency message.
  * @param {string} message - The raw distress message
- * @param {object} [audioPart] - Optional inlineData object for Gemini audio processing
+ * @param {object} [audioPart] - Audio part (Not supported natively by OpenRouter text models)
  * @returns {Promise<{ urgency: string, requiredCapabilities: string[], symptomsSummary: string, locationMentioned: string }>}
  */
 export async function extractEmergencyDetails(message, audioPart = null) {
-  if (!process.env.GEMINI_API_KEY) {
-    console.warn("GEMINI_API_KEY is missing. Returning fallback mock data.");
+
+  console.log("aaaaaaaa", process.env.OPENROUTER_API_KEY);
+
+  if (!process.env.OPENROUTER_API_KEY) {
+    console.warn("OPENROUTER_API_KEY is missing. Returning fallback mock data.");
     return {
       urgency: "HIGH",
       requiredCapabilities: ["icu", "oxygen"],
@@ -55,20 +28,35 @@ export async function extractEmergencyDetails(message, audioPart = null) {
     };
   }
 
+  if (audioPart) {
+    console.warn("Audio processing requested but OpenRouter text models do not support raw audio parts natively via OpenAI SDK format. Treating as text.");
+  }
+
   const prompt = `
 You are an expert emergency medical dispatcher. 
 Analyze the following distress message and extract the urgency, required medical capabilities, a short summary of the symptoms, and any rough location mentioned by the user.
 
+Respond with ONLY valid JSON, no markdown, no explanation.
+
 Distress Message:
 "${message}"
-`;
 
-  const contents = audioPart ? [prompt, audioPart] : [prompt];
+Format:
+{
+  "urgency": "CRITICAL", "HIGH", "MEDIUM", or "LOW",
+  "requiredCapabilities": array of strings (e.g., ["trauma", "icu", "maternity", "cardiology"]),
+  "symptomsSummary": "A short 1-2 sentence summary of the symptoms",
+  "locationMentioned": "Any location mentioned in the text (e.g. 'Lakeside, Pokhara'). Return empty string if none."
+}`;
 
   try {
-    const result = await model.generateContent(contents);
-    const responseText = result.response.text();
-    return JSON.parse(responseText);
+    const completion = await client.chat.completions.create({
+      model: "openrouter/free", // auto-picks from free models
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+    });
+
+    return JSON.parse(completion.choices[0].message.content);
   } catch (error) {
     console.error("Error in AI extraction:", error);
     throw new Error("Failed to process emergency message.");

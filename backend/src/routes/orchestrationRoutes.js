@@ -6,10 +6,11 @@ const router = Router();
 // Test endpoint for orchestrator
 router.post("/orchestrate", async (req, res, next) => {
   try {
+    console.log("haaaaaaa")
     const { rawMessage, latitude, longitude, senderContact, channel } = req.body;
 
-    if (!rawMessage || !latitude || !longitude) {
-      const err = new Error("rawMessage, latitude, and longitude are required");
+    if (!rawMessage) {
+      const err = new Error("rawMessage is required");
       err.status = 400;
       throw err;
     }
@@ -21,6 +22,8 @@ router.post("/orchestrate", async (req, res, next) => {
       senderContact || "test-contact",
       channel || "api_test"
     );
+
+    console.log(result);
 
     res.status(200).json(result);
   } catch (error) {

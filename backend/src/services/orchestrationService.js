@@ -1,5 +1,5 @@
 import { extractEmergencyDetails } from "./aiService.js";
-import { findBestHospital } from "./hospitalMatch.service.js";
+import { findBestHospital, findNearestAmbulances } from "./hospitalMatch.service.js";
 import { db } from "../db/index.js";
 import { emergencyRequests, healthcareProviders } from "../db/schema/index.js";
 import { inArray } from "drizzle-orm";
@@ -86,6 +86,11 @@ export async function processEmergencyMessage(
       return null;
     }).filter(Boolean);
   }
+
+  // 3. Find nearest available ambulances
+  const ambulances = await findNearestAmbulances(latitude, longitude, 3);
+
+  // 4. Save to Database
   const [requestRecord] = await db
     .insert(emergencyRequests)
     .values({
@@ -121,6 +126,7 @@ export async function processEmergencyMessage(
     triageDetails,
     matchedProvider: bestMatch,
     alternativeProviders: alternativeProviders, // Return the full list fetched from DB
+    ambulances: ambulances,
     requestId: requestRecord.id,
   };
 }

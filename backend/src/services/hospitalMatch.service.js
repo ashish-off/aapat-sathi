@@ -214,3 +214,48 @@ export async function findFallbackProviders(
     distanceKm: Math.round(row.distance_km * 100) / 100,
   }));
 }
+
+/**
+ * Finds the nearest available ambulances.
+ * Uses Haversine formula for distance (km).
+ *
+ * @param {number} latitude - patient latitude
+ * @param {number} longitude - patient longitude
+ * @param {number} limit - max results to return (default 3)
+ */
+export async function findNearestAmbulances(latitude, longitude, limit = 3) {
+  const result = await db.execute(sql`
+    SELECT
+      id,
+      provider_id,
+      vehicle_number,
+      driver_name,
+      driver_phone,
+      latitude,
+      longitude,
+      status,
+      (
+        6371 * acos(
+          cos(radians(${latitude})) * cos(radians(latitude)) *
+          cos(radians(longitude) - radians(${longitude})) +
+          sin(radians(${latitude})) * sin(radians(latitude))
+        )
+      ) AS distance_km
+    FROM ambulances
+    WHERE status = 'available'
+    ORDER BY distance_km ASC
+    LIMIT ${limit}
+  `);
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    providerId: row.provider_id,
+    vehicleNumber: row.vehicle_number,
+    driverName: row.driver_name,
+    driverPhone: row.driver_phone,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    status: row.status,
+    distanceKm: Math.round(row.distance_km * 100) / 100,
+  }));
+}

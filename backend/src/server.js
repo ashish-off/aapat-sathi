@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`🚑 Aapat Sathi backend running on port ${PORT}`);
   // startDispatchEscalationWorker();
-  startTelegramBot();
+  await startTelegramBot(app);
 });
 
 // Graceful shutdown to prevent Telegram 409 Conflict on nodemon restart
