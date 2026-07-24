@@ -6,7 +6,13 @@ import routes from "./routes/index.js";
 const app = express();
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, server-side fetch)
+    if (!origin || origin.startsWith("http://localhost:")) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
 }));
 app.use(express.json());

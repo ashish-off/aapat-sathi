@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  getAllAmbulances,
   getAmbulanceDashboard,
   acceptDispatch,
   rejectDispatch,
@@ -7,6 +8,9 @@ import {
 } from "../controllers/ambulance.controller.js";
 
 const ambulanceRoute = Router();
+
+// Get list of all ambulances
+ambulanceRoute.get("/", getAllAmbulances);
 
 // Register new ambulance
 ambulanceRoute.post("/register", registerAmbulance);
