@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { registerProvider, registerAmbulanceAction } from "../actions/providerActions";
 import Link from "next/link";
+import { Building2, Ambulance as AmbulanceIcon, CheckCircle2, ArrowLeft } from "lucide-react";
 
 const CAPABILITIES = [
   "icu", "surgery", "maternity", "trauma", 
@@ -45,9 +46,7 @@ export default function RegisterPage() {
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
         <div className="bg-white border border-slate-200 p-8 rounded-2xl max-w-md w-full text-center shadow-sm">
           <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <CheckCircle2 className="w-8 h-8" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Registration Successful</h2>
           <p className="text-slate-600 mb-6 text-sm">
@@ -64,7 +63,7 @@ export default function RegisterPage() {
             </Link>
             <button
               onClick={() => setSuccess(false)}
-              className="text-xs text-slate-500 hover:text-slate-800 py-2"
+              className="text-xs text-slate-500 hover:text-slate-800 py-2 cursor-pointer"
             >
               Register Another Service
             </button>
@@ -89,8 +88,9 @@ export default function RegisterPage() {
               Register your service to receive rapid emergency dispatches across Nepal.
             </p>
           </div>
-          <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
-            &larr; Home
+          <Link href="/" className="flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+            <span>Home</span>
           </Link>
         </div>
 
@@ -112,9 +112,7 @@ export default function RegisterPage() {
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                 registerType === "healthcare" ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-500"
               }`}>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0h4m-4 0v-4m0 4h4" />
-                </svg>
+                <Building2 className="w-5 h-5" />
               </div>
               {registerType === "healthcare" && (
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
@@ -142,9 +140,7 @@ export default function RegisterPage() {
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                 registerType === "ambulance" ? "bg-red-50 text-red-600" : "bg-slate-100 text-slate-500"
               }`}>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                <AmbulanceIcon className="w-5 h-5" />
               </div>
               {registerType === "ambulance" && (
                 <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
@@ -210,7 +206,7 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {CAPABILITIES.map((cap) => (
                     <label key={cap} className="flex items-center space-x-2.5 cursor-pointer group">
-                      <input type="checkbox" name={`capabilities_${cap}`} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                      <input type="checkbox" name={`capabilities_${cap}`} className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
                       <span className="text-xs text-slate-700 group-hover:text-slate-900 capitalize font-medium">{cap}</span>
                     </label>
                   ))}

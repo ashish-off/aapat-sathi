@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Mic, MicOff, Send, Activity, AlertTriangle, Loader2, ArrowRight, X, CheckCircle2 } from "lucide-react";
 
 type AIResult = {
   urgency: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
@@ -31,7 +32,6 @@ export default function AIAssistant() {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    // Automatic speech recognition (supports multi-language speech input)
     recognition.lang = ""; 
 
     recognition.onresult = (event: any) => {
@@ -141,9 +141,7 @@ export default function AIAssistant() {
           </h2>
           
           <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
-            <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold block text-amber-950">Required Information:</span>
               Please include both <strong>Emergency Details / Symptoms</strong> and your <strong>Current Location</strong> (city, area, or landmark) for accurate triage and hospital matching.
@@ -157,9 +155,7 @@ export default function AIAssistant() {
             <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
               isListening ? "bg-red-600 text-white animate-bounce" : "bg-red-100 text-red-600"
             }`}>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
+              {isListening ? <Mic className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900">Speak to Aapat Sathi</h3>
@@ -176,10 +172,8 @@ export default function AIAssistant() {
                 : "bg-red-600 hover:bg-red-700 text-white"
             }`}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-            {isListening ? "Listening... (Click to Stop)" : "Start Voice Input"}
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            <span>{isListening ? "Listening... (Click to Stop)" : "Start Voice Input"}</span>
           </button>
         </div>
 
@@ -222,18 +216,13 @@ export default function AIAssistant() {
             >
               {isAnalyzing ? (
                 <>
-                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
                   Evaluating Triage...
                 </>
               ) : (
                 <>
                   <span>Evaluate Emergency Needs</span>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
@@ -260,9 +249,9 @@ export default function AIAssistant() {
               </div>
               <button
                 onClick={() => setAnalysisResult(null)}
-                className="text-slate-400 hover:text-white text-xs cursor-pointer"
+                className="text-slate-400 hover:text-white text-xs cursor-pointer p-1"
               >
-                ✕ Clear
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -277,9 +266,10 @@ export default function AIAssistant() {
                 {analysisResult.requiredCapabilities.map((cap) => (
                   <span
                     key={cap}
-                    className="bg-slate-800 border border-slate-700 text-blue-300 text-xs px-2.5 py-1 rounded-md font-medium"
+                    className="bg-slate-800 border border-slate-700 text-blue-300 text-xs px-2.5 py-1 rounded-md font-medium flex items-center gap-1"
                   >
-                    ✓ {cap}
+                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />
+                    {cap}
                   </span>
                 ))}
               </div>

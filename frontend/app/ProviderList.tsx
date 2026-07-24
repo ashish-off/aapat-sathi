@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Search, MapPin, Phone, Navigation, Hospital, X } from "lucide-react";
 
 type Provider = {
   id: string;
@@ -56,15 +57,8 @@ export default function ProviderList({ initialProviders }: { initialProviders: P
       <div className="space-y-4 mb-8">
         {/* Search Bar */}
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+            <Search className="h-5 w-5" />
           </div>
           <input
             type="text"
@@ -76,9 +70,9 @@ export default function ProviderList({ initialProviders }: { initialProviders: P
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-xs text-slate-400 hover:text-slate-600"
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-              Clear
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -105,9 +99,7 @@ export default function ProviderList({ initialProviders }: { initialProviders: P
       {/* Grid of Providers */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl max-w-md mx-auto shadow-xs">
-          <svg className="w-10 h-10 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0h4m-4 0v-4m0 4h4" />
-          </svg>
+          <Hospital className="w-10 h-10 text-slate-300 mx-auto mb-3" />
           <h3 className="text-base font-semibold text-slate-800">No Hospitals Found</h3>
           <p className="text-xs text-slate-500 mt-1">Try clearing your search or selecting another capability filter.</p>
         </div>
@@ -156,16 +148,11 @@ export default function ProviderList({ initialProviders }: { initialProviders: P
                 {/* Details */}
                 <div className="space-y-2 text-xs text-slate-600 mb-6">
                   <div className="flex items-start gap-2">
-                    <svg className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                    <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                     <span>{provider.address}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
+                    <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                     <a href={`tel:${provider.phone}`} className="hover:text-blue-600 hover:underline font-medium">
                       {provider.phone}
                     </a>
@@ -191,9 +178,7 @@ export default function ProviderList({ initialProviders }: { initialProviders: P
                   href={`tel:${provider.phone}`}
                   className="flex-1 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold py-2 px-3 rounded-lg text-center transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
+                  <Phone className="w-3.5 h-3.5" />
                   Call Facility
                 </a>
                 <a
@@ -202,9 +187,7 @@ export default function ProviderList({ initialProviders }: { initialProviders: P
                   rel="noopener noreferrer"
                   className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold py-2 px-3 rounded-lg transition-colors border border-slate-200 flex items-center gap-1"
                 >
-                  <svg className="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  </svg>
+                  <Navigation className="w-3.5 h-3.5 text-slate-600" />
                   Directions
                 </a>
               </div>
