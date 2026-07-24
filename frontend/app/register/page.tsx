@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { registerProvider, registerAmbulanceAction } from "../actions/providerActions";
+import { searchPlaces, reverseGeocode, getCurrentLocation, PlaceSuggestion } from "../services/geocodingService";
 import Link from "next/link";
-import { Building2, Ambulance as AmbulanceIcon, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Building2, Ambulance as AmbulanceIcon, CheckCircle2, ArrowLeft, MapPin, Loader2, Compass } from "lucide-react";
 
 const CAPABILITIES = [
   "icu", "surgery", "maternity", "trauma", 
@@ -16,6 +17,102 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Healthcare Form Location State
+  const [hospitalAddress, setHospitalAddress] = useState("");
+  const [hospitalLat, setHospitalLat] = useState<number>(27.7052);
+  const [hospitalLon, setHospitalLon] = useState<number>(85.3145);
+  const [hospitalSuggestions, setHospitalSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [showHospitalDropdown, setShowHospitalDropdown] = useState(false);
+  const [isSearchingHospital, setIsSearchingHospital] = useState(false);
+
+  // Ambulance Form Location State
+  const [ambulanceRegion, setAmbulanceRegion] = useState("");
+  const [ambulanceLat, setAmbulanceLat] = useState<number>(27.7172);
+  const [ambulanceLon, setAmbulanceLon] = useState<number>(85.324);
+  const [ambulanceSuggestions, setAmbulanceSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [showAmbulanceDropdown, setShowAmbulanceDropdown] = useState(false);
+  const [isSearchingAmbulance, setIsSearchingAmbulance] = useState(false);
+
+  // Search place suggestions as Healthcare Address is typed
+  useEffect(() => {
+    if (!hospitalAddress.trim() || hospitalAddress.trim().length < 2) {
+      setHospitalSuggestions([]);
+      setShowHospitalDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingHospital(true);
+      const results = await searchPlaces(hospitalAddress);
+      setHospitalSuggestions(results);
+      setShowHospitalDropdown(results.length > 0);
+      setIsSearchingHospital(false);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [hospitalAddress]);
+
+  // Search place suggestions as Ambulance Region is typed
+  useEffect(() => {
+    if (!ambulanceRegion.trim() || ambulanceRegion.trim().length < 2) {
+      setAmbulanceSuggestions([]);
+      setShowAmbulanceDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingAmbulance(true);
+      const results = await searchPlaces(ambulanceRegion);
+      setAmbulanceSuggestions(results);
+      setShowAmbulanceDropdown(results.length > 0);
+      setIsSearchingAmbulance(false);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [ambulanceRegion]);
+
+  // Handle "Use My Current Location" button click
+  const handleUseCurrentLocation = async (target: "hospital" | "ambulance") => {
+    try {
+      if (target === "hospital") setIsSearchingHospital(true);
+      else setIsSearchingAmbulance(true);
+
+      const loc = await getCurrentLocation();
+      const placeName = await reverseGeocode(loc.lat, loc.lon);
+
+      if (target === "hospital") {
+        setHospitalLat(loc.lat);
+        setHospitalLon(loc.lon);
+        setHospitalAddress(placeName || "Current GPS Location");
+        setShowHospitalDropdown(false);
+      } else {
+        setAmbulanceLat(loc.lat);
+        setAmbulanceLon(loc.lon);
+        setAmbulanceRegion(placeName || "Current GPS Base Region");
+        setShowAmbulanceDropdown(false);
+      }
+    } catch (err: any) {
+      alert("Could not retrieve GPS location. Please select a suggested location from the list.");
+    } finally {
+      if (target === "hospital") setIsSearchingHospital(false);
+      else setIsSearchingAmbulance(false);
+    }
+  };
+
+  const handleSelectHospitalSuggestion = (suggestion: PlaceSuggestion) => {
+    setHospitalAddress(suggestion.displayName);
+    setHospitalLat(suggestion.lat);
+    setHospitalLon(suggestion.lon);
+    setShowHospitalDropdown(false);
+  };
+
+  const handleSelectAmbulanceSuggestion = (suggestion: PlaceSuggestion) => {
+    setAmbulanceRegion(suggestion.displayName);
+    setAmbulanceLat(suggestion.lat);
+    setAmbulanceLon(suggestion.lon);
+    setShowAmbulanceDropdown(false);
+  };
 
   async function handleHealthcareSubmit(formData: FormData) {
     setError(null);
@@ -164,6 +261,10 @@ export default function RegisterPage() {
           {/* Option 1: Healthcare Form */}
           {registerType === "healthcare" ? (
             <form action={handleHealthcareSubmit} className="space-y-6">
+              {/* Hidden Lat/Lon inputs set by user selection / GPS button */}
+              <input type="hidden" name="latitude" value={hospitalLat} />
+              <input type="hidden" name="longitude" value={hospitalLon} />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-700">Facility Name</label>
@@ -185,18 +286,68 @@ export default function RegisterPage() {
                   <input required type="tel" name="phone" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors" placeholder="e.g. 01-4221119" />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Address / Location</label>
-                  <input required type="text" name="address" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors" placeholder="e.g. Mahaboudha, Kathmandu" />
-                </div>
+                {/* Facility Address Input with Autocomplete & Use My Current Location */}
+                <div className="space-y-1.5 md:col-span-2 relative">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700">Facility Address / Location</label>
+                    <button
+                      type="button"
+                      onClick={() => handleUseCurrentLocation("hospital")}
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Compass className="w-3.5 h-3.5" />
+                      <span>📍 Use My Current Location</span>
+                    </button>
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Latitude</label>
-                  <input required type="number" step="any" name="latitude" defaultValue="27.705" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors" placeholder="e.g. 27.7052" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Longitude</label>
-                  <input required type="number" step="any" name="longitude" defaultValue="85.314" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors" placeholder="e.g. 85.3145" />
+                  <div className="relative">
+                    <input
+                      required
+                      type="text"
+                      name="address"
+                      value={hospitalAddress}
+                      onChange={(e) => setHospitalAddress(e.target.value)}
+                      onFocus={() => hospitalSuggestions.length > 0 && setShowHospitalDropdown(true)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-4 pr-10 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors"
+                      placeholder="Type location to see suggestions (e.g. Mahaboudha, Kathmandu)..."
+                    />
+                    {isSearchingHospital && (
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-blue-600">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Place Suggestions Autocomplete Dropdown */}
+                  {showHospitalDropdown && hospitalSuggestions.length > 0 && (
+                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto">
+                      <div className="px-3 py-1.5 bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                        Suggested Locations (Click to Select)
+                      </div>
+                      {hospitalSuggestions.map((item, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSelectHospitalSuggestion(item)}
+                          className="w-full text-left px-4 py-2.5 text-xs text-slate-800 hover:bg-blue-50 hover:text-blue-900 border-b border-slate-100 last:border-0 transition-colors flex items-start gap-2 cursor-pointer"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{item.displayName}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Location Coordinate Badge */}
+                  <div className="p-2.5 bg-slate-50 rounded-lg text-xs text-slate-600 flex items-center justify-between border border-slate-200/80">
+                    <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                      Assigned GPS Location:
+                    </span>
+                    <span className="font-mono text-slate-900 font-bold bg-white px-2 py-0.5 rounded border border-slate-200">
+                      Lat {hospitalLat.toFixed(4)}, Lon {hospitalLon.toFixed(4)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -224,6 +375,10 @@ export default function RegisterPage() {
           ) : (
             /* Option 2: Ambulance Form */
             <form action={handleAmbulanceSubmit} className="space-y-6">
+              {/* Hidden Lat/Lon inputs set by user selection / GPS button */}
+              <input type="hidden" name="latitude" value={ambulanceLat} />
+              <input type="hidden" name="longitude" value={ambulanceLon} />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-700">Vehicle Registration Number</label>
@@ -240,19 +395,68 @@ export default function RegisterPage() {
                   <input required type="tel" name="driverPhone" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors" placeholder="e.g. 9841234567" />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Base Location / Region</label>
-                  <input required type="text" name="region" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors" placeholder="e.g. Lazimpat, Kathmandu Valley" />
-                </div>
+                {/* Base Region Input with Autocomplete & Use My Current Location */}
+                <div className="space-y-1.5 md:col-span-2 relative">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700">Base Location / Region</label>
+                    <button
+                      type="button"
+                      onClick={() => handleUseCurrentLocation("ambulance")}
+                      className="text-xs font-semibold text-red-600 hover:text-red-800 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Compass className="w-3.5 h-3.5" />
+                      <span>📍 Use My Current Location</span>
+                    </button>
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Base Latitude</label>
-                  <input required type="number" step="any" name="latitude" defaultValue="27.7172" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors" placeholder="e.g. 27.7172" />
-                </div>
+                  <div className="relative">
+                    <input
+                      required
+                      type="text"
+                      name="region"
+                      value={ambulanceRegion}
+                      onChange={(e) => setAmbulanceRegion(e.target.value)}
+                      onFocus={() => ambulanceSuggestions.length > 0 && setShowAmbulanceDropdown(true)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-4 pr-10 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors"
+                      placeholder="Type location to see suggestions (e.g. Lazimpat, Kathmandu)..."
+                    />
+                    {isSearchingAmbulance && (
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-red-600">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      </div>
+                    )}
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">Base Longitude</label>
-                  <input required type="number" step="any" name="longitude" defaultValue="85.324" className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:border-slate-800 focus:bg-white transition-colors" placeholder="e.g. 85.324" />
+                  {/* Place Suggestions Autocomplete Dropdown */}
+                  {showAmbulanceDropdown && ambulanceSuggestions.length > 0 && (
+                    <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto">
+                      <div className="px-3 py-1.5 bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                        Suggested Base Locations (Click to Select)
+                      </div>
+                      {ambulanceSuggestions.map((item, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSelectAmbulanceSuggestion(item)}
+                          className="w-full text-left px-4 py-2.5 text-xs text-slate-800 hover:bg-red-50 hover:text-red-900 border-b border-slate-100 last:border-0 transition-colors flex items-start gap-2 cursor-pointer"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{item.displayName}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Location Coordinate Badge */}
+                  <div className="p-2.5 bg-slate-50 rounded-lg text-xs text-slate-600 flex items-center justify-between border border-slate-200/80">
+                    <span className="flex items-center gap-1.5 font-medium text-slate-700">
+                      <MapPin className="w-3.5 h-3.5 text-red-600" />
+                      Assigned GPS Location:
+                    </span>
+                    <span className="font-mono text-slate-900 font-bold bg-white px-2 py-0.5 rounded border border-slate-200">
+                      Lat {ambulanceLat.toFixed(4)}, Lon {ambulanceLon.toFixed(4)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
