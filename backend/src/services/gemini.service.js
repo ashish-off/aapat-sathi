@@ -6,12 +6,16 @@ const client = new OpenAI({
 });
 
 export async function extractEmergencyData(rawText) {
-  const prompt = `Extract structured data from this emergency SMS. Respond with ONLY valid JSON, no markdown, no explanation.
-SMS: "${rawText}"
+  const prompt = `Analyze this message and determine if it's an emergency or general medical inquiry. Respond with ONLY valid JSON, no markdown, no explanation.
+Message: "${rawText}"
 Format:
 {
-  "emergencyType": one of ["cardiac_arrest", "stroke", "severe_bleeding", "respiratory_distress", "accident", "fire", "other"],
-  "locationText": the most specific location/landmark mentioned, or null if none found
+  "isEmergency": boolean (true if life-threatening, urgent care needed; false if general medical question),
+  "emergencyType": if isEmergency is true, one of ["cardiac_arrest", "stroke", "severe_bleeding", "respiratory_distress", "accident", "fire", "other"], otherwise null,
+  "medicalCondition": if isEmergency is false, the medical condition or specialty needed (e.g., "diabetes", "cardiology", "orthopedics", "general_checkup"), otherwise null,
+  "requiredCapabilities": array of medical capabilities needed (e.g., ["endocrinology", "diabetes_care", "cardiology", "icu", "trauma"]),
+  "locationText": the most specific location/landmark mentioned, or null if none found,
+  "urgency": "critical", "high", "medium", or "low"
 }`;
 
   const completion = await client.chat.completions.create({
