@@ -22,6 +22,8 @@ const CRITICAL_TYPES = new Set([
   "stroke",
   "severe_bleeding",
   "accident",
+  "CRITICAL",
+  "HIGH"
 ]);
 
 function scoreHospital(hospital, availability, userLat, userLon) {
